@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>项目导航</title>
+    <style>
+        /* ===== 基础重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --card-bg: #111111;
+            --border: #2a2a2a;
+            --jade: #00d4aa;
+            --jade-dim: rgba(0, 212, 170, 0.25);
+            --text: #e0e0e0;
+            --text-muted: #888888;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'Segoe UI', 'PingFang SC', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px; /* 减少外边距，让内容更满 */
+            margin: 0;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* ===== Canvas 背景层 ===== */
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== 主容器 — 放大尺寸 ===== */
+        .nav-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1100px; /* 从 820px 调大 */
+            width: 100%;
+            padding: 48px 48px 40px; /* 内边距略微增加，但相对容器比例更紧凑 */
+            background: rgba(17, 17, 17, 0.85);
+            backdrop-filter: blur(2px);
+            border: 1px solid var(--border);
+            box-shadow: 0 0 0 1px rgba(0, 212, 170, 0.05) inset;
+            transition: border-color 0.3s;
+            border-radius: 0;
+        }
+
+        .nav-container:hover {
+            border-color: var(--jade-dim);
+        }
+
+        /* ===== 四角装饰 ===== */
+        .corner {
+            position: absolute;
+            width: 24px; /* 稍微放大 */
+            height: 24px;
+            border: 1px solid var(--jade-dim);
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        .corner.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .corner.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+        .corner.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+        .corner.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+        /* ===== 头部 ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 40px; /* 间距拉大一点以匹配大卡片 */
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .main-title {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 700;
+            font-size: 2.8rem; /* 从 2.2rem 放大 */
+            letter-spacing: 0.4em;
+            color: #f0f0f0;
+        }
+        .main-title .accent {
+            color: var(--jade);
+        }
+
+        .sub {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+            font-weight: 300;
+        }
+
+        /* ===== 卡片网格 — 放大卡片 ===== */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* 从 200px 调大 */
+            gap: 28px; /* 间距适当增加 */
+            margin-top: 8px;
+        }
+
+        /* ===== 卡片 ===== */
+        .nav-card {
+            position: relative;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 34px 24px 28px; /* 内边距加大 */
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.25s ease;
+            border-radius: 0;
+            cursor: pointer;
+        }
+
+        .nav-card:hover {
+            border-color: var(--jade-dim);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
+        }
+
+        .nav-card .icon {
+            font-size: 2.8rem; /* 从 2.2rem 放大 */
+            line-height: 1;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+            padding: 16px; /* 内边距加大 */
+            width: 76px; /* 从 60px 放大 */
+            height: 76px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0d0d0d;
+            transition: border-color 0.3s;
+            border-radius: 0;
+        }
+        .nav-card:hover .icon {
+            border-color: var(--jade-dim);
+        }
+
+        .nav-card .name {
+            font-size: 1.4rem; /* 从 1.1rem 放大 */
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            color: var(--text);
+            margin-bottom: 4px;
+            transition: color 0.2s;
+        }
+        .nav-card:hover .name {
+            color: var(--jade);
+        }
+
+        .nav-card .desc {
+            font-size: 0.85rem; /* 从 0.75rem 放大 */
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+        }
+
+        .nav-card .tag {
+            margin-top: 14px;
+            padding: 4px 18px; /* 加大 */
+            border: 1px solid var(--border);
+            font-size: 0.7rem; /* 略微放大 */
+            color: #777;
+            letter-spacing: 0.1em;
+            background: #0a0a0a;
+            transition: border-color 0.2s, color 0.2s;
+            border-radius: 0;
+        }
+        .nav-card:hover .tag {
+            border-color: var(--jade-dim);
+            color: var(--jade);
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 32px 24px 28px;
+                max-width: 100%;
+            }
+            .main-title {
+                font-size: 2.2rem;
+                letter-spacing: 0.25em;
+            }
+            .card-grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 20px;
+            }
+            .nav-card .icon {
+                width: 64px;
+                height: 64px;
+                font-size: 2.2rem;
+                padding: 12px;
+            }
+            .nav-card .name {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .nav-container {
+                padding: 20px 14px 18px;
+            }
+            .main-title {
+                font-size: 1.6rem;
+                letter-spacing: 0.15em;
+            }
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .nav-card {
+                padding: 24px 16px 20px;
+            }
+            .nav-card .icon {
+                width: 56px;
+                height: 56px;
+                font-size: 1.8rem;
+                padding: 10px;
+            }
+            .nav-card .name {
+                font-size: 1.1rem;
+            }
+            .corner {
+                width: 16px;
+                height: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas 背景 -->
+    <canvas id="canvas-bg"></canvas>
+
+    <!-- ===== 主容器 ===== -->
+    <div class="nav-container">
+
+        <!-- 四角装饰 -->
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <!-- 头部 -->
+        <div class="header">
+            <div class="main-title">项目导航</div>
+            <div class="sub">—— 快捷入口 ——</div>
+        </div>
+
+        <!-- 卡片网格 -->
+        <div class="card-grid">
+
+            <a href="https://odinfreed.github.io/library/Compass%20of%20All%20Things.html" target="_blank" class="nav-card" rel="noopener">
+                <div class="icon">🧭</div>
+                <div class="name">万象罗盘</div>
+                <div class="desc">Compass of All Things</div>
+                <div class="tag"># 综合工具</div>
+            </a>
+
+            <a href="https://odinfreed.github.io/library/Smart%20Editor.html" target="_blank" class="nav-card" rel="noopener">
+                <div class="icon">⚡</div>
+                <div class="name">智能编辑器</div>
+                <div class="desc">Smart Editor</div>
+                <div class="tag"># 效率工具</div>
+            </a>
+
+            <a href="https://odinfreed.github.io/nsh_tools/" target="_blank" class="nav-card" rel="noopener">
+                <div class="icon">⚔️</div>
+                <div class="name">逆水寒 · 战斗分析</div>
+                <div class="desc">nsh_tools 系统</div>
+                <div class="tag"># 游戏数据</div>
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- ===== Canvas 动画脚本 ===== -->
+    <script>
+        (function() {
+            const canvas = document.getElementById('canvas-bg');
+            const ctx = canvas.getContext('2d');
+
+            let width, height;
+            let particles = [];
+            const PARTICLE_COUNT = 100; // 稍微增加粒子数，填充更细腻
+            const MAX_SPEED = 0.35;
+            const CONNECT_DIST = 150;
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    const angle = Math.random() * 2 * Math.PI;
+                    const speed = 0.1 + Math.random() * (MAX_SPEED - 0.1);
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                    this.radius = 1.0 + Math.random() * 2.2;
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < 0 || this.x > width) { this.vx *= -1;
+                        this.x = Math.min(Math.max(this.x, 0), width); }
+                    if (this.y < 0 || this.y > height) { this.vy *= -1;
+                        this.y = Math.min(Math.max(this.y, 0), height); }
+
+                    this.vx += (Math.random() - 0.5) * 0.01;
+                    this.vy += (Math.random() - 0.5) * 0.01;
+                    const sp = Math.hypot(this.vx, this.vy);
+                    if (sp > MAX_SPEED) {
+                        this.vx = (this.vx / sp) * MAX_SPEED;
+                        this.vy = (this.vy / sp) * MAX_SPEED;
+                    }
+                }
+            }
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push(new Particle());
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+
+                // 连线
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < CONNECT_DIST) {
+                            const alpha = 0.2 * (1 - dist / CONNECT_DIST);
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(0, 212, 170, ${alpha})`;
+                            ctx.lineWidth = 0.6;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // 粒子
+                for (const p of particles) {
+                    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 4);
+                    gradient.addColorStop(0, 'rgba(0, 212, 170, 0.4)');
+                    gradient.addColorStop(0.5, 'rgba(0, 212, 170, 0.12)');
+                    gradient.addColorStop(1, 'rgba(0, 212, 170, 0)');
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius * 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius * 0.6, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#00d4aa';
+                    ctx.shadowColor = 'rgba(0, 212, 170, 0.3)';
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                requestAnimationFrame(draw);
+            }
+
+            function updateLoop() {
+                for (const p of particles) {
+                    p.update();
+                }
+                requestAnimationFrame(updateLoop);
+            }
+
+            updateLoop();
+            draw();
+
+            window.addEventListener('resize', () => {
+                resize();
+                for (const p of particles) {
+                    p.x = Math.min(Math.max(p.x, 0), width);
+                    p.y = Math.min(Math.max(p.y, 0), height);
+                }
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
